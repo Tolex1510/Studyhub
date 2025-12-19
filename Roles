@@ -1,102 +1,102 @@
--- create role edu_admin with login password 'admin_education_password';
--- create role edu_teacher with login password 'teacher_education_password';
--- create role edu_student with login password 'student_education_password';
+create role edu_admin with login password 'admin_education_password';
+create role edu_teacher with login password 'teacher_education_password';
+create role edu_student with login password 'student_education_password';
 
--- comment on role edu_admin is 'Администратор образовательной платформы - полный доступ';
--- comment on role edu_teacher is 'Преподаватель/ревьюер - доступ к данным';
--- comment on role edu_student is 'Студент - доступ к своим данным';
+comment on role edu_admin is 'Администратор образовательной платформы - полный доступ';
+comment on role edu_teacher is 'Преподаватель/ревьюер - доступ к данным';
+comment on role edu_student is 'Студент - доступ к своим данным';
 
--- create role admin_group;
--- create role teacher_group;
--- create role student_group;
+create role admin_group;
+create role teacher_group;
+create role student_group;
 
--- grant admin_group to edu_admin;
--- grant teacher_group to edu_teacher;
--- grant student_group to edu_student;
+grant admin_group to edu_admin;
+grant teacher_group to edu_teacher;
+grant student_group to edu_student;
 
--- grant connect on database education_platform to admin_group, teacher_group, student_group;
--- grant usage on schema public to admin_group, teacher_group, student_group;
+grant connect on database education_platform to admin_group, teacher_group, student_group;
+grant usage on schema public to admin_group, teacher_group, student_group;
 
--- grant select on courses, modules, lessons, homeworks, reviewers, certificates to student_group;
--- grant select, insert, update on students, enrollments, lesson_completions, homework_submissions to student_group;
--- grant usage, select on all sequences in schema public to student_group;
+grant select on courses, modules, lessons, homeworks, reviewers, certificates to student_group;
+grant select, insert, update on students, enrollments, lesson_completions, homework_submissions to student_group;
+grant usage, select on all sequences in schema public to student_group;
 
--- grant student_group to teacher_group;
--- grant select, insert, update on modules, lessons, homeworks, reviewers, deadlines to teacher_group;
--- grant select, update on homework_submissions to teacher_group;
--- grant select on students, enrollments, lesson_completions to teacher_group;
--- grant select on course_prerequisites to teacher_group;
+grant student_group to teacher_group;
+grant select, insert, update on modules, lessons, homeworks, reviewers, deadlines to teacher_group;
+grant select, update on homework_submissions to teacher_group;
+grant select on students, enrollments, lesson_completions to teacher_group;
+grant select on course_prerequisites to teacher_group;
 
--- grant all privileges on all tables in schema public to admin_group;
--- grant all privileges on all sequences in schema public to admin_group;
--- grant all privileges on all functions in schema public to admin_group;
--- grant create on schema public to admin_group;
+grant all privileges on all tables in schema public to admin_group;
+grant all privileges on all sequences in schema public to admin_group;
+grant all privileges on all functions in schema public to admin_group;
+grant create on schema public to admin_group;
 
--- alter table students force row level security;
--- alter table enrollments force row level security;
--- alter table lesson_completions force row level security;
--- alter table homework_submissions force row level security;
--- alter table certificates force row level security;
+alter table students force row level security;
+alter table enrollments force row level security;
+alter table lesson_completions force row level security;
+alter table homework_submissions force row level security;
+alter table certificates force row level security;
 
--- create or replace function current_user_id()
--- 	returns integer
--- 	language 'plpgsql'
--- as
--- $$
--- begin
--- 	return nullif(current_setting('django.user_id', true), '')::integer;
--- 	exception when others then return null;
--- end;
--- $$;
+create or replace function current_user_id()
+	returns integer
+	language 'plpgsql'
+as
+$$
+begin
+	return nullif(current_setting('django.user_id', true), '')::integer;
+	exception when others then return null;
+end;
+$$;
 
--- create or replace function current_user_role()
--- 	returns text
--- 	language 'plpgsql'
--- as
--- $$
--- begin
--- 	return current_setting('django.user_role', true);
--- 	exception when others then return null;
--- end;
--- $$;
+create or replace function current_user_role()
+	returns text
+	language 'plpgsql'
+as
+$$
+begin
+	return current_setting('django.user_role', true);
+	exception when others then return null;
+end;
+$$;
 
--- create or replace function is_course_teacher(p_course_id integer)
--- 	returns bool
--- 	language 'plpgsql'
--- as
--- $$
--- begin
--- 	return exists (select 1 from teacher_courses
--- 					where course_id = p_course_id
--- 					and teacher_id = current_user_id());
--- end;
--- $$;
+create or replace function is_course_teacher(p_course_id integer)
+	returns bool
+	language 'plpgsql'
+as
+$$
+begin
+	return exists (select 1 from teacher_courses
+					where course_id = p_course_id
+					and teacher_id = current_user_id());
+end;
+$$;
 
--- create policy student_own_data on students for all using (student_id = current_user_id());
--- create policy student_own_enrollments on enrollments for all using (student_id = current_user_id());
--- create policy student_own_completions on lesson_completions for all using (enrollment_id in (select enrollment_id from enrollments where student_id = current_user_id()));
--- create policy student_own_submissions on homework_submissions for all using (enrollment_id in (select enrollment_id from enrollments where student_id = current_user_id()));
--- create policy student_own_certificates on certificates for all using (enrollment_id in (select enrollment_id from enrollments where student_id = current_user_id()));
+create policy student_own_data on students for all using (student_id = current_user_id());
+create policy student_own_enrollments on enrollments for all using (student_id = current_user_id());
+create policy student_own_completions on lesson_completions for all using (enrollment_id in (select enrollment_id from enrollments where student_id = current_user_id()));
+create policy student_own_submissions on homework_submissions for all using (enrollment_id in (select enrollment_id from enrollments where student_id = current_user_id()));
+create policy student_own_certificates on certificates for all using (enrollment_id in (select enrollment_id from enrollments where student_id = current_user_id()));
 
--- create table teacher_courses (
--- 	teacher_course_id serial primary key,
--- 	reviewer_id integer not null,
--- 	course_id integer not null,
--- 	is_main_teacher bool not null,
--- 	assigned_at timestamp default current_timestamp,
--- 	foreign key (reviewer_id) references reviewers(reviewer_id) on delete cascade,
--- 	foreign key (course_id) references courses(course_id) on delete cascade,
--- 	unique(reviewer_id, course_id)
--- );
+create table teacher_courses (
+	teacher_course_id serial primary key,
+	reviewer_id integer not null,
+	course_id integer not null,
+	is_main_teacher bool not null,
+	assigned_at timestamp default current_timestamp,
+	foreign key (reviewer_id) references reviewers(reviewer_id) on delete cascade,
+	foreign key (course_id) references courses(course_id) on delete cascade,
+	unique(reviewer_id, course_id)
+);
 
--- grant all on teacher_courses to admin_group;
--- grant select, insert, update on teacher_courses to teacher_group;
+grant all on teacher_courses to admin_group;
+grant select, insert, update on teacher_courses to teacher_group;
 
--- create policy teacher_student_access on students for select using (exists (
--- 	select 1 from enrollments e
--- 	join courses c on c.course_id = e.course_id
--- 	where e.student_id = students.student_id
--- 	and c.course_id in (select course_id from teacher_courses where teacher_course_id = current_user_id())
--- ));
+create policy teacher_student_access on students for select using (exists (
+	select 1 from enrollments e
+	join courses c on c.course_id = e.course_id
+	where e.student_id = students.student_id
+	and c.course_id in (select course_id from teacher_courses where teacher_course_id = current_user_id())
+));
 
--- create policy teacher_enrollment_access on enrollments for select using (course_id in (select course_id from teacher_courses where teacher_course_id = current_user_id()));
+create policy teacher_enrollment_access on enrollments for select using (course_id in (select course_id from teacher_courses where teacher_course_id = current_user_id()));

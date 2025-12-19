@@ -1,246 +1,246 @@
---ФУНКЦИИ
+ФУНКЦИИ
 
--- create or replace function is_homework_on_time (p_submission_id integer)
--- 	returns bool
--- 	language 'plpgsql'
--- as
--- $$
--- declare
--- 	v_submitted_at timestamp;
--- 	v_deadline timestamp;
--- begin
--- 	select hs.submitted_at, hs.personal_deadline
--- 	into v_submitted_at, v_deadline
--- 	from homework_submissions hs
--- 	where hs.submission_id = p_submission_id;
+create or replace function is_homework_on_time (p_submission_id integer)
+	returns bool
+	language 'plpgsql'
+as
+$$
+declare
+	v_submitted_at timestamp;
+	v_deadline timestamp;
+begin
+	select hs.submitted_at, hs.personal_deadline
+	into v_submitted_at, v_deadline
+	from homework_submissions hs
+	where hs.submission_id = p_submission_id;
 
--- 	if v_deadline is null then return true; end if;
+	if v_deadline is null then return true; end if;
 
--- 	return v_submitted_at <= v_deadline;
--- end;
--- $$;
+	return v_submitted_at <= v_deadline;
+end;
+$$;
 
--- create or replace function get_course_student_count(p_course_id integer)
--- 	returns integer
--- 	language 'plpgsql'
--- as
--- $$
--- declare
--- 	v_student_count integer;
--- begin
--- 	select count(*)
--- 	into v_student_count
--- 	from enrollments
--- 	where course_id = p_course_id
--- 	and status = 'active';
--- 	return v_student_count;
--- end;
--- $$;
+create or replace function get_course_student_count(p_course_id integer)
+	returns integer
+	language 'plpgsql'
+as
+$$
+declare
+	v_student_count integer;
+begin
+	select count(*)
+	into v_student_count
+	from enrollments
+	where course_id = p_course_id
+	and status = 'active';
+	return v_student_count;
+end;
+$$;
 
---ПРОЦЕДУРЫ
+ПРОЦЕДУРЫ
 
--- create or replace procedure auto_enroll_next_course(p_student_id integer, p_completed_course_id integer)
--- 	language 'plpgsql'
--- as
--- $$
--- declare
--- 	next_course record;
--- begin
--- 	for next_course in
--- 		select distinct c.course_id, c.title
--- 		from courses c
--- 		join course_prerequisites cp on cp.course_id = c.course_id
--- 		where cp.required_course_id = p_completed_course_id
--- 		and cp.requirement_type = 'mandatory'
--- 		and c.is_active = true
--- 		and not exists (
--- 			select 1 from enrollments e
--- 			where e.student_id = p_student_id
--- 			and e.course_id = c.course_id
--- 		)
--- 	loop
--- 		insert into enrollments (student_id, course_id, enrollment_date, course_start_date)
--- 		values (p_student_id, next_course.course_id, current_timestamp, current_timestamp);
--- 		raise notice 'Студент % автоматически зачислен на курс: %', p_student_id, next_course.title;
--- 	end loop;
--- end;
--- $$;
+create or replace procedure auto_enroll_next_course(p_student_id integer, p_completed_course_id integer)
+	language 'plpgsql'
+as
+$$
+declare
+	next_course record;
+begin
+	for next_course in
+		select distinct c.course_id, c.title
+		from courses c
+		join course_prerequisites cp on cp.course_id = c.course_id
+		where cp.required_course_id = p_completed_course_id
+		and cp.requirement_type = 'mandatory'
+		and c.is_active = true
+		and not exists (
+			select 1 from enrollments e
+			where e.student_id = p_student_id
+			and e.course_id = c.course_id
+		)
+	loop
+		insert into enrollments (student_id, course_id, enrollment_date, course_start_date)
+		values (p_student_id, next_course.course_id, current_timestamp, current_timestamp);
+		raise notice 'Студент % автоматически зачислен на курс: %', p_student_id, next_course.title;
+	end loop;
+end;
+$$;
 
--- create or replace procedure update_course_completion_status(p_enrollment_id integer)
--- 	language 'plpgsql'
--- as
--- $$
--- declare
--- 	v_total_lessons integer;
--- 	v_completed_lessons integer;
--- 	v_progress_percentage decimal(5,2);
--- begin
--- 	select count(l.lesson_id), count(lc.completion_id)
--- 	into v_total_lessons, v_completed_lessons
--- 	from lessons l
--- 	join modules m on m.module_id = l.module_id
--- 	join enrollments e on e.course_id = m.course_id
--- 	left join lesson_completions lc on lc.lesson_id = l.lesson_id and lc.enrollment_id = e.enrollment_id
--- 	where e.enrollment_id = p_enrollment_id
--- 	and l.is_required = true;
+create or replace procedure update_course_completion_status(p_enrollment_id integer)
+	language 'plpgsql'
+as
+$$
+declare
+	v_total_lessons integer;
+	v_completed_lessons integer;
+	v_progress_percentage decimal(5,2);
+begin
+	select count(l.lesson_id), count(lc.completion_id)
+	into v_total_lessons, v_completed_lessons
+	from lessons l
+	join modules m on m.module_id = l.module_id
+	join enrollments e on e.course_id = m.course_id
+	left join lesson_completions lc on lc.lesson_id = l.lesson_id and lc.enrollment_id = e.enrollment_id
+	where e.enrollment_id = p_enrollment_id
+	and l.is_required = true;
 
--- 	v_progress_percentage := (v_completed_lessons * 100.0) / nullif(v_total_lessons, 0);
+	v_progress_percentage := (v_completed_lessons * 100.0) / nullif(v_total_lessons, 0);
 
--- 	if v_completed_lessons = v_total_lessons and v_total_lessons > 0 then
--- 		update enrollments
--- 		set
--- 			status = 'completes',
--- 			completion_date = current_timestamp,
--- 			overall_score = coalesce((
--- 				select avg(ls.score)
--- 				from lesson_completions lc
--- 				where lc.enrollment_id = p_enrollment_id
--- 				and lc.score is not null
--- 			), 100)
--- 		where enrollment_id = p_enrollment_id;
--- 		raise notice 'Курс завершен для enrollment_id: %', p_enrollment_id;
--- 	else
--- 		raise notice 'Прогресс: %/% уроков (%)', v_completed_lessons, v_total_lessons, round(v_progress_percentage, 1);
--- 	end if;
--- end;
--- $$;
+	if v_completed_lessons = v_total_lessons and v_total_lessons > 0 then
+		update enrollments
+		set
+			status = 'completes',
+			completion_date = current_timestamp,
+			overall_score = coalesce((
+				select avg(ls.score)
+				from lesson_completions lc
+				where lc.enrollment_id = p_enrollment_id
+				and lc.score is not null
+			), 100)
+		where enrollment_id = p_enrollment_id;
+		raise notice 'Курс завершен для enrollment_id: %', p_enrollment_id;
+	else
+		raise notice 'Прогресс: %/% уроков (%)', v_completed_lessons, v_total_lessons, round(v_progress_percentage, 1);
+	end if;
+end;
+$$;
 
---ТРИГГЕРЫ
+ТРИГГЕРЫ
 
--- create or replace function create_certificate_on_completion()
--- 	returns trigger
--- 	language 'plpgsql'
--- as
--- $$
--- begin
--- 	if new.status = 'completed' and old.status != 'completed' then
--- 		insert into certificates (
--- 			enrollment_id,
--- 			certificate_url,
--- 			issue_date,
--- 			verification_code,
--- 			grade_level
--- 		) values (
--- 			new.enrollment_id,
--- 			'/certificates/' || new.enrollment_id || '.pdf',
--- 			current_timestamp,
--- 			'CERT-' || new.enrollment_id || '-' || md5(random()::text),
--- 			(select difficulty_level from courses where course_id = new.course_od)
--- 		);
--- 		raise notice 'Создан сертификат для enrollment_id: %', new.enrollment_id;
--- 		call auto_enroll_next_course(new.student_id, new.course_id);
--- 	end if;
--- 	return new;
--- end;
--- $$;
+create or replace function create_certificate_on_completion()
+	returns trigger
+	language 'plpgsql'
+as
+$$
+begin
+	if new.status = 'completed' and old.status != 'completed' then
+		insert into certificates (
+			enrollment_id,
+			certificate_url,
+			issue_date,
+			verification_code,
+			grade_level
+		) values (
+			new.enrollment_id,
+			'/certificates/' || new.enrollment_id || '.pdf',
+			current_timestamp,
+			'CERT-' || new.enrollment_id || '-' || md5(random()::text),
+			(select difficulty_level from courses where course_id = new.course_od)
+		);
+		raise notice 'Создан сертификат для enrollment_id: %', new.enrollment_id;
+		call auto_enroll_next_course(new.student_id, new.course_id);
+	end if;
+	return new;
+end;
+$$;
 
--- create trigger trigger_create_certificate
--- 	after update of status on enrollments
--- 	for each row
--- 	execute function create_certificate_on_completion();
+create trigger trigger_create_certificate
+	after update of status on enrollments
+	for each row
+	execute function create_certificate_on_completion();
 
 
--- create or replace function update_progress_on_lesson_completion()
--- 	returns trigger
--- 	language 'plpgsql'
--- as
--- $$
--- begin
--- 	if tg_op = 'insert' then
--- 		call update_course_completion_status(new.enrollment_id);
--- 	end if;
+create or replace function update_progress_on_lesson_completion()
+	returns trigger
+	language 'plpgsql'
+as
+$$
+begin
+	if tg_op = 'insert' then
+		call update_course_completion_status(new.enrollment_id);
+	end if;
 
--- 	return new;
--- end;
--- $$;
+	return new;
+end;
+$$;
 
--- create trigger trigger_update_progress
--- 	after insert on lesson_completions
--- 	for each row
--- 	execute function update_progress_on_lesson_completion();
+create trigger trigger_update_progress
+	after insert on lesson_completions
+	for each row
+	execute function update_progress_on_lesson_completion();
 
 	
--- create or replace function validate_score_range()
--- 	returns trigger
--- 	language 'plpgsql'
--- as
--- $$
--- declare
--- 	v_max_score integer;
--- begin
--- 	if tg_table_name = 'lesson_completions' then
--- 		select max_score into v_max_score
--- 		from lessons
--- 		where lesson_id = new.lesson_id;
+create or replace function validate_score_range()
+	returns trigger
+	language 'plpgsql'
+as
+$$
+declare
+	v_max_score integer;
+begin
+	if tg_table_name = 'lesson_completions' then
+		select max_score into v_max_score
+		from lessons
+		where lesson_id = new.lesson_id;
 
--- 		if new.score > v_max_score then
--- 			raise exception 'Балл (%) превышает максимальный (%) для этого урока', new.score, v_max_score;
--- 		end if;
--- 	elsif tg_table_name = 'homework_submissions' then
--- 		select max_score into v_max_score
--- 		from homeworks
--- 		where homework_id = new.homework_id;
+		if new.score > v_max_score then
+			raise exception 'Балл (%) превышает максимальный (%) для этого урока', new.score, v_max_score;
+		end if;
+	elsif tg_table_name = 'homework_submissions' then
+		select max_score into v_max_score
+		from homeworks
+		where homework_id = new.homework_id;
 
--- 		if new.score > v_max_score then
--- 			raise exception 'Балл (%) превышает маскимальный (%) для этого задания', new.score, v_max_score;
--- 		end if;
--- 	end if;
+		if new.score > v_max_score then
+			raise exception 'Балл (%) превышает маскимальный (%) для этого задания', new.score, v_max_score;
+		end if;
+	end if;
 
--- 	return new;
--- end;
--- $$;
+	return new;
+end;
+$$;
 
--- create trigger trigger_validate_lesson_score
--- 	before insert or update of score on lesson_completions
--- 	for each row
--- 	execute function validate_score_range();
+create trigger trigger_validate_lesson_score
+	before insert or update of score on lesson_completions
+	for each row
+	execute function validate_score_range();
 
--- create trigger trigger_validate_homework_score
--- 	before insert or update of score on homework_submissions
--- 	for each row
--- 	execute function validate_score_range();
+create trigger trigger_validate_homework_score
+	before insert or update of score on homework_submissions
+	for each row
+	execute function validate_score_range();
 
---ПРЕДСТАВЛЕНИЯ
+ПРЕДСТАВЛЕНИЯ
 
--- create view student_dashboard as
--- select 
--- 	s.student_id, s.first_name, s.last_name, s.email,
--- 	count(distinct e.course_id) as total_courses,
--- 	count(distinct lc.lesson_id) as completed_lessons,
--- 	count(distinct hs.submission_id) as submitted_homeworks
--- from students s
--- 	left join enrollments e on e.student_id = s.student_id and e.status = 'active'
--- 	left join lesson_completions lc on lc.enrollment_id = e.enrollment_id
--- 	left join homework_submissions hs on hs.enrollment_id = e.enrollment_id
--- where s.student_id = current_user_id()
--- group by s.student_id, s.first_name, s.last_name, s.email;
+create view student_dashboard as
+select 
+	s.student_id, s.first_name, s.last_name, s.email,
+	count(distinct e.course_id) as total_courses,
+	count(distinct lc.lesson_id) as completed_lessons,
+	count(distinct hs.submission_id) as submitted_homeworks
+from students s
+	left join enrollments e on e.student_id = s.student_id and e.status = 'active'
+	left join lesson_completions lc on lc.enrollment_id = e.enrollment_id
+	left join homework_submissions hs on hs.enrollment_id = e.enrollment_id
+where s.student_id = current_user_id()
+group by s.student_id, s.first_name, s.last_name, s.email;
 
--- grant select on student_dashboard to student_group;
+grant select on student_dashboard to student_group;
 
--- create view teacher_dashboard as
--- select
--- 	r.reviewer_id as teacher_id, r.first_name, r.last_name,
--- 	count(distinct hs.submission_id) as pending_reviews,
--- 	count(distinct e.enrollment_id) as active_students,
--- 	avg(hs.score) as avg_score
--- from reviewers r
--- 	left join homework_submissions hs on hs.reviewer_id = r.reviewer_id and hs.status = 'under_review'
--- 	left join enrollments e on e.course_id in (select course_id from teacher_courses where teacher_course_id = r.reviewer_id)
--- where r.reviewer_id = current_user_id()
--- group by r.reviewer_id, r.first_name, r.last_name;
+create view teacher_dashboard as
+select
+	r.reviewer_id as teacher_id, r.first_name, r.last_name,
+	count(distinct hs.submission_id) as pending_reviews,
+	count(distinct e.enrollment_id) as active_students,
+	avg(hs.score) as avg_score
+from reviewers r
+	left join homework_submissions hs on hs.reviewer_id = r.reviewer_id and hs.status = 'under_review'
+	left join enrollments e on e.course_id in (select course_id from teacher_courses where teacher_course_id = r.reviewer_id)
+where r.reviewer_id = current_user_id()
+group by r.reviewer_id, r.first_name, r.last_name;
 
--- grant select on teacher_dashboard to teacher_group;
+grant select on teacher_dashboard to teacher_group;
 
--- create view admin_stats as
--- select 
--- 	count(distinct s.student_id) as total_students,
--- 	count(distinct r.reviewer_id) as total_teachers,
--- 	count(distinct c.course_id) as total_course,
--- 	count(distinct e.enrollment_id) as total_enrollments,
--- 	avg(e.overall_score) as avg_course_score
--- from students s
--- cross join reviewers r
--- cross join courses c
--- cross join enrollments e;
+create view admin_stats as
+select 
+	count(distinct s.student_id) as total_students,
+	count(distinct r.reviewer_id) as total_teachers,
+	count(distinct c.course_id) as total_course,
+	count(distinct e.enrollment_id) as total_enrollments,
+	avg(e.overall_score) as avg_course_score
+from students s
+cross join reviewers r
+cross join courses c
+cross join enrollments e;
 
--- grant select on admin_stats to admin_group;
+grant select on admin_stats to admin_group;
