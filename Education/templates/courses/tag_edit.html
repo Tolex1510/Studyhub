@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if form.instance.pk %}Редактирование тега{% else %}Создание тега{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'tag_management' %}">Управление тегами</a></li>
+                    <li class="breadcrumb-item active">
+                        {% if form.instance.pk %}Редактирование тега{% else %}Создание тега{% endif %}
+                    </li>
+                </ol>
+            </nav>
+
+            <div class="card shadow">
+                <div class="card-header {% if form.instance.pk %}bg-warning text-dark{% else %}bg-primary text-white{% endif %}">
+                    <h4 class="mb-0">
+                        <i class="fas {% if form.instance.pk %}fa-edit{% else %}fa-plus-circle{% endif %} me-2"></i>
+                        {% if form.instance.pk %}Редактирование тега{% else %}Создание нового тега{% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Название тега -->
+                        <div class="mb-4">
+                            <label for="id_name" class="form-label fw-bold">
+                                <i class="fas fa-tag me-2"></i>{{ form.name.label }}
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.name.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Уникальное название тега для группировки курсов</div>
+                        </div>
+                        
+                        <!-- Описание тега -->
+                        <div class="mb-4">
+                            <label for="id_description" class="form-label fw-bold">
+                                <i class="fas fa-align-left me-2"></i>{{ form.description.label }}
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.description.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Описание поможет пользователям понять, какие курсы относятся к этому тегу</div>
+                        </div>
+                        
+                        <!-- Цвет тега -->
+                        <div class="mb-4">
+                            <label for="id_color" class="form-label fw-bold">
+                                <i class="fas fa-palette me-2"></i>{{ form.color.label }}
+                            </label>
+                            <div class="d-flex align-items-center">
+                                <div class="me-2">
+                                    {{ form.color }} Выбрать цвет
+                                </div>
+                            </div>
+                            {% if form.color.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.color.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Цвет будет использоваться для отображения тега в интерфейсе</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="id_slug" class="form-label fw-bold">
+                                <i class="fas fa-align-left me-2"></i>{{ form.slug.label }}
+                            </label>
+                            {{ form.slug }}
+                            {% if form.slug.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.slug.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Ссылка поможет писать теги в поиске для поиска курсов по названию тега</div>
+                        </div>
+                        
+                        <!-- Предпросмотр тега -->
+                        {% if form.name.value %}
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-eye me-2"></i>Предпросмотр тега</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <span class="badge me-3" 
+                                          style="background-color: {{ form.color.value|default:'#007bff' }}; color: white; font-size: 1.1em; padding: 8px 16px;">
+                                        {{ form.name.value|default:'Новый тег' }}
+                                    </span>
+                                    {% if form.description.value %}
+                                    <p class="mb-0 text-muted">{{ form.description.value }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <div>
+                                <button type="submit" class="btn {% if form.instance.pk %}btn-warning{% else %}btn-primary{% endif %}">
+                                    <i class="fas fa-save me-2"></i>
+                                    {% if form.instance.pk %}Сохранить изменения{% else %}Создать тег{% endif %}
+                                </button>
+                                <a href="{% url 'tag_management' %}" class="btn btn-outline-secondary">Отмена</a>
+                            </div>
+                            
+                            {% if form.instance.pk %}
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                <i class="fas fa-trash me-2"></i>Удалить тег
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if form.instance.pk %}
+<!-- Modal подтверждения удаления -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Удаление тега</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить тег <strong>"{{ form.instance.name }}"</strong>?</p>
+                
+                {% with stats=form.instance.courses.count %}
+                {% if stats > 0 %}
+                <div class="alert alert-warning">
+                    <p class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Этот тег используется в {{ stats }} курс{{ stats|pluralize:"ах,ах" }}.
+                        При удалении тег будет удален из всех курсов.
+                    </p>
+                </div>
+                {% endif %}
+                {% endwith %}
+                
+                <p class="text-danger">Это действие нельзя отменить.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <form method="post" action="{% url 'tag_delete' form.instance.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Удалить тег</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% block extra_js %}
+<script>
+// Обновление предпросмотра цвета при изменении
+document.getElementById('id_color').addEventListener('input', function(e) {
+    const colorPreview = document.querySelector('.color-preview');
+    if (colorPreview) {
+        colorPreview.style.backgroundColor = e.target.value;
+    }
+    
+    // Обновляем предпросмотр тега если он есть
+    const tagPreview = document.querySelector('.badge.me-3');
+    if (tagPreview) {
+        tagPreview.style.backgroundColor = e.target.value;
+    }
+});
+
+// Обновление названия тега в предпросмотре
+document.getElementById('id_name').addEventListener('input', function(e) {
+    const tagPreview = document.querySelector('.badge.me-3');
+    if (tagPreview && e.target.value) {
+        tagPreview.textContent = e.target.value;
+    }
+});
+</script>
+{% endblock %}
+
+<style>
+/* Стили для поля выбора цвета */
+input[type="color"] {
+    cursor: pointer;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 3px;
+}
+
+.color-preview {
+    border: 2px solid #dee2e6;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Улучшение внешнего вида текстовых полей */
+.form-control {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 10px 15px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Улучшение текстовой области */
+textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+</style>
+{% endblock %}

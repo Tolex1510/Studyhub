@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Управление курсом - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Боковая панель -->
+        <div class="col-lg-3 col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-cog me-2"></i>Управление</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'course_edit' course.course_id %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-edit me-2"></i>Редактировать курс
+                        </a>
+                        <a href="#modules" class="list-group-item list-group-item-action active">
+                            <i class="fas fa-folder me-2"></i>Модули ({{ modules|length }})
+                        </a>
+                        <a href="{% url 'module_create' %}?course={{ course.course_id }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-plus me-2"></i>Добавить модуль
+                        </a>
+                        <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-arrow-left me-2"></i>Назад к курсам
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статистика курса -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Статистика</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Статус:</strong>
+                        <span class="badge {% if course.is_active %}bg-success{% else %}bg-warning{% endif %} float-end">
+                            {% if course.is_active %}Активен{% else %}Черновик{% endif %}
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Студентов:</strong>
+                        <span class="float-end">{{ course.enrolled_students.count }}</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Модулей:</strong>
+                        <span class="float-end">{{ course.modules.count }}</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Уроков:</strong>
+                        <span class="float-end">{{ course.total_lessons }}</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Рейтинг:</strong>
+                        <span class="float-end">{{ course.rating|default:"-" }}/5</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Основной контент -->
+        <div class="col-lg-9 col-md-8">
+            <!-- Заголовок курса -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h2 class="mb-1">{{ course.title }}</h2>
+                            <p class="text-muted mb-2">{{ course.description }}</p>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for tag in course.tags.all %}
+                                <span class="badge" style="background-color: {{ tag.color }}; color: white;">
+                                    {{ tag.name }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="h4 text-primary mb-0">
+                                {% if course.price > 0 %}
+                                {{ course.price }} ₽
+                                {% else %}
+                                Бесплатно
+                                {% endif %}
+                            </span>
+                            <div class="text-muted small">
+                                {{ course.duration_weeks }} недель · {{ course.get_difficulty_level_display }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Модули и уроки -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-folder me-2"></i>Модули и уроки</h4>
+                    <a href="{% url 'module_create' %}?course={{ course.course_id }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i>Добавить модуль
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if modules %}
+                    <div class="accordion" id="modulesAccordion">
+                        {% for module in modules %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="moduleHeading{{ module.module_id }}">
+                                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#moduleCollapse{{ module.id }}"
+                                        aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" 
+                                        aria-controls="moduleCollapse{{ module.id }}">
+                                    <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                        <div>
+                                            <span class="fw-bold">{{ module.order }}.</span> {{ module.title }}
+                                            <span class="badge bg-secondary ms-2">{{ module.lessons.count }} уроков</span>
+                                            {% if not module.is_active %}
+                                            <span class="badge bg-warning ms-1">Скрыт</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-muted small">
+                                            {{ module.duration_hours }} час.
+                                        </div>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="moduleCollapse{{ module.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" 
+                                 aria-labelledby="moduleHeading{{ module.id }}" data-bs-parent="#modulesAccordion">
+                                <div class="accordion-body">
+                                    {% if module.description %}
+                                    <p class="text-muted mb-3">{{ module.description }}</p>
+                                    {% endif %}
+                                    
+                                    <!-- Список уроков модуля -->
+                                    <div class="list-group mb-3">
+                                        {% for lesson in module.lessons.all %}
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex align-items-center">
+                                                    <span class="text-muted me-3">{{ lesson.order }}.</span>
+                                                    <div>
+                                                        <h6 class="mb-1">{{ lesson.title }}</h6>
+                                                        {% if lesson.content %}
+                                                        <p class="text-muted small mb-1">{{ lesson.content|truncatewords:15 }}</p>
+                                                        {% endif %}
+                                                        <div class="d-flex gap-2">
+                                                            {% if lesson.is_free %}
+                                                            <span class="badge bg-success">Бесплатный</span>
+                                                            {% endif %}
+                                                            {% if not lesson.is_active %}
+                                                            <span class="badge bg-warning">Скрыт</span>
+                                                            {% endif %}
+                                                            {% if lesson.video_url %}
+                                                            <span class="badge bg-info">Есть видео</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'lesson_edit' lesson.lesson_id %}" class="btn btn-outline-primary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-danger" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#deleteLessonModal{{ lesson.id }}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Modal удаления урока -->
+                                        <div class="modal fade" id="deleteLessonModal{{ lesson.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Удаление урока</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Удалить урок <strong>"{{ lesson.title }}"</strong>?</p>
+                                                        <p class="text-danger small">Это действие нельзя отменить.</p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                                        <form method="post" action="{% url 'lesson_delete' lesson.lesson_id %}">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-danger">Удалить</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% empty %}
+                                        <div class="list-group-item text-center text-muted py-4">
+                                            <i class="fas fa-file-alt fa-2x mb-2"></i>
+                                            <p>В этом модуле пока нет уроков</p>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <!-- Действия модуля -->
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <a href="{% url 'lesson_create' %}?module={{ module.module_id }}" class="btn btn-success btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Добавить урок
+                                        </a>
+                                        <div class="btn-group">
+                                            <a href="{% url 'module_edit' module.module_id %}" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-edit me-1"></i>Редактировать
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#deleteModuleModal{{ module.id }}">
+                                                <i class="fas fa-trash me-1"></i>Удалить
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal удаления модуля -->
+                        <div class="modal fade" id="deleteModuleModal{{ module.module_id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Удаление модуля</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>Удалить модуль <strong>"{{ module.title }}"</strong>?</p>
+                                        <p class="text-danger">Это действие нельзя отменить. Все уроки в модуле также будут удалены.</p>
+                                        <ul>
+                                            <li>Уроков в модуле: {{ module.lessons.count }}</li>
+                                        </ul>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                        <form method="post" action="{% url 'module_delete' module.module_id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger">Удалить модуль</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <h4>Модули не найдены</h4>
+                        <p class="text-muted mb-4">Создайте первый модуль для вашего курса</p>
+                        <a href="{% url 'module_create' %}?course={{ course.course_id }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Создать модуль
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{% if user_type == 'student' %}Регистрация студента{% else %}Регистрация преподавателя{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-header {% if user_type == 'student' %}bg-primary{% else %}bg-success{% endif %} text-white text-center py-4">
+                    <h2 class="mb-0">
+                        <i class="fas {% if user_type == 'student' %}fa-user-graduate{% else %}fa-chalkboard-teacher{% endif %} me-2"></i>
+                        {% if user_type == 'student' %}Регистрация студента{% else %}Регистрация преподавателя{% endif %}
+                    </h2>
+                    <p class="mb-0 mt-2">
+                        {% if user_type == 'student' %}
+                        Создайте аккаунт для доступа к курсам
+                        {% else %}
+                        Создайте аккаунт преподавателя
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Личная информация -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                    Имя *
+                                </label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.first_name.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                    Фамилия *
+                                </label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.last_name.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Контактная информация -->
+                        <div class="mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">
+                                Email *
+                            </label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.email.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.phone.id_for_label }}" class="form-label">
+                                    Телефон
+                                </label>
+                                {{ form.phone }}
+                                {% if form.phone.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.phone.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            {% if user_type == 'student' %}
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.date_of_birth.id_for_label }}" class="form-label">
+                                    Дата рождения
+                                </label>
+                                {{ form.date_of_birth }}
+                                {% if form.date_of_birth.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.date_of_birth.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.specialization.id_for_label }}" class="form-label">
+                                    Специализация *
+                                </label>
+                                {{ form.specialization }}
+                                {% if form.specialization.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.specialization.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Дополнительные поля для преподавателя -->
+                        {% if user_type == 'reviewer' %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.hire_date.id_for_label }}" class="form-label">
+                                    Дата начала работы
+                                </label>
+                                {{ form.hire_date }}
+                                {% if form.hire_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.hire_date.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.experience_years.id_for_label }}" class="form-label">
+                                    Опыт работы (лет)
+                                </label>
+                                {{ form.experience_years }}
+                                {% if form.experience_years.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.experience_years.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Пароль -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.password.id_for_label }}" class="form-label">
+                                    Пароль *
+                                </label>
+                                {{ form.password }}
+                                {% if form.password.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.password.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Минимум 6 символов
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.password_confirm.id_for_label }}" class="form-label">
+                                    Подтверждение пароля *
+                                </label>
+                                {{ form.password_confirm }}
+                                {% if form.password_confirm.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.password_confirm.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Общие ошибки формы -->
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn {% if user_type == 'student' %}btn-primary{% else %}btn-success{% endif %} btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>
+                                Зарегистрироваться
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <p class="mb-0">
+                            Уже есть аккаунт? 
+                            <a href="{% url 'login' %}" class="text-decoration-none">
+                                Войдите здесь
+                            </a>
+                        </p>
+                        <p class="mb-0 mt-2">
+                            <a href="{% url 'choose_registration_type' %}" class="text-decoration-none">
+                                ← Вернуться к выбору типа аккаунта
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

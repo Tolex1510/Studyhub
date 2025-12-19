@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Панель преподавателя</a></li>
+                    {% if module %}
+                    <li class="breadcrumb-item"><a href="{% url 'course_manage' module.course.course_id %}">{{ module.course.title }}</a></li>
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                    {% else %}
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                    {% endif %}
+                </ol>
+            </nav>
+
+            <div class="card shadow">
+                <div class="card-header {% if form.instance.id %}bg-warning text-dark{% else %}bg-info text-white{% endif %}">
+                    <h4 class="mb-0">
+                        <i class="fas {% if form.instance.id %}fa-edit{% else %}fa-file-alt{% endif %} me-2"></i>
+                        {{ title }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                {% if not module %}
+                                <div class="mb-3">
+                                    <label for="module_id" class="form-label">Модуль *</label>
+                                    <select name="module" value="{{ form.module.value }}" class="form-select" id="module_id" required>
+                                        <option value="">-- Выберите модуль --</option>
+                                        {% for module_option in form.fields.module.queryset %}
+                                        <option value="{{ module_option.module_id }}">
+                                        <!-- {% if form.module.value == module_option.id %}selected{% endif %}> -->
+                                            Модуль: {{ module_option.title }} - Курс: {{ module_option.course.title }} 
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if form.module.errors %}
+                                    <div class="text-danger small">{{ form.module.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <input type="hidden" name="module" value="{{ module.id }}">
+                                <div class="alert alert-info">
+                                    <strong>Курс:</strong> {{ module.course.title }}<br>
+                                    <strong>Модуль:</strong> {{ module.title }}
+                                </div>
+                                {% endif %}
+                                
+                                <div class="mb-3">
+                                    <label for="id_title" class="form-label">Название урока *</label>
+                                    <input type="text" name="title" value="{{ form.title.value|default:'' }}" class="form-control" id="id_title" required>
+                                    {% if form.title.errors %}
+                                    <div class="text-danger small">{{ form.title.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="id_lesson_type" class="form-label">Тип урока *</label>
+                                    {{ form.lesson_type }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="id_lesson_order" class="form-label">Порядковый номер в модуле</label>
+                                    <input type="number" name="lesson_order" value="{{ form.lesson_order.value|default:'1' }}" class="form-control" id="id_lesson_order" min="1">
+                                    {% if form.lesson_order.errors %}
+                                    <div class="text-danger small">{{ form.lesson_order.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="id_video_url" class="form-label">Видео URL</label>
+                                    <input type="url" name="video_url" value="{{ form.video_url.value|default:'' }}" class="form-control" id="id_video_url" placeholder="https://...">
+                                    {% if form.video_url.errors %}
+                                    <div class="text-danger small">{{ form.video_url.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <!-- <div class="mb-3">
+                                    <label for="id_attachment" class="form-label">Дополнительные материалы</label>
+                                    {% if form.instance.attachment %}
+                                    <div class="mb-2">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-file me-2"></i>
+                                            <span>{{ form.instance.attachment.name|cut:"lessons/attachments/" }}</span>
+                                            <div class="form-check ms-3">
+                                                <input class="form-check-input" type="checkbox" name="attachment-clear" id="attachment-clear">
+                                                <label class="form-check-label" for="attachment-clear">Удалить файл</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    <input type="file" class="form-control" id="id_attachment" name="attachment">
+                                    <div class="form-text">Максимальный размер файла: 10MB</div>
+                                </div> -->
+                                <div class="mb-3">
+                                    <label for="id_duration_minutes" class="form-label">Длительность (минут) *</label>
+                                    <input type="number" name="duration_minutes" value="{{ form.duration_minutes.value|default:'45' }}" 
+                                            class="form-control {% if form.duration_minutes.errors %}is-invalid{% endif %}" 
+                                            id="id_duration_minutes" min="1" max="480" required>
+                                    {% if form.duration_minutes.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.duration_minutes.errors }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">Продолжительность урока</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="id_max_score" class="form-label">Максимальный балл</label>
+                                    <input type="number" name="max_score" value="{{ form.max_score.value|default:'10' }}" 
+                                           class="form-control {% if form.max_score.errors %}is-invalid{% endif %}" 
+                                           id="id_max_score" min="0" max="100">
+                                    {% if form.max_score.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.max_score.errors }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">Максимальное количество баллов за урок</div>
+                                </div>
+                                
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" name="is_active" id="id_is_active" {% if form.is_active.value %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_is_active">Активный урок</label>
+                                        </div>
+                                        
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" name="is_required" id="id_is_required" {% if form.is_required.value %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_is_free">Необходимый урок</label>
+                                        </div>
+                                        
+                                        {% if form.instance.id %}
+                                        <div class="text-muted small">
+                                            <p><strong>Информация:</strong></p>
+                                            <ul class="list-unstyled">
+                                                <li>Создан: {{ form.instance.created_at|date:"d.m.Y H:i" }}</li>
+                                                <li>Обновлен: {{ form.instance.updated_at|date:"d.m.Y H:i" }}</li>
+                                            </ul>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_content" class="form-label">Содержание урока *</label>
+                            <textarea name="content" class="form-control" id="id_content" rows="8" required>{{ form.content.value|default:'' }}</textarea>
+                            {% if form.content.errors %}
+                            <div class="text-danger small">{{ form.content.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <button type="submit" class="btn {% if form.instance.id %}btn-warning{% else %}btn-info text-white{% endif %}">
+                                    <i class="fas fa-save me-2"></i>
+                                    {% if form.instance.id %}Сохранить изменения{% else %}Создать урок{% endif %}
+                                </button>
+                                {% if module %}
+                                <a href="{% url 'course_manage' module.course.course_id %}" class="btn btn-outline-secondary">Отмена</a>
+                                {% else %}
+                                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Отмена</a>
+                                {% endif %}
+                            </div>
+                            
+                            {% if form.instance.id %}
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                <i class="fas fa-trash me-2"></i>Удалить
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if form.instance.id %}
+<!-- Modal подтверждения удаления -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Удаление урока</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Удалить урок <strong>"{{ form.instance.title }}"</strong>?</p>
+                <p class="text-danger">Это действие нельзя отменить.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <form method="post" action="{% url 'lesson_delete' form.instance.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Удалить урок</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

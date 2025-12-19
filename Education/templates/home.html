@@ -1,0 +1,205 @@
+<!-- templates/home.html -->
+{% extends 'base.html' %}
+
+{% block title %}Главная - Образовательная платформа{% endblock %}
+
+{% block content %}
+<!-- Герой секция -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">
+                    Образование нового поколения
+                </h1>
+                <p class="lead mb-4">
+                    Онлайн-курсы от лучших преподавателей. Развивайте навыки, 
+                    получайте знания и достигайте своих целей вместе с нами.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    {% if not user.is_authenticated %}
+                    <a href="{% url 'choose_registration_type' %}" class="btn btn-light btn-lg">
+                        Начать обучение
+                    </a>
+                    <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg">
+                        Войти в систему
+                    </a>
+                    {% else %}
+                        {% if user_type == 'student' %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-light btn-lg">
+                            Мой кабинет
+                        </a>
+                        {% elif user_type == 'reviewer' %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-success btn-lg">
+                            Кабинет преподавателя
+                        </a>
+                        {% else %}
+                        <a href="{% url 'choose_registration_type' %}" class="btn btn-warning btn-lg">
+                            Завершить регистрацию
+                        </a>
+                        {% endif %}
+                    {% endif %}
+                    <a href="#features" class="btn btn-outline-light btn-lg">
+                        Узнать больше
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <i class="fas fa-laptop-code" style="font-size: 300px; opacity: 0.8;"></i>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row text-center mb-4">
+            <div class="col">
+                <h2 class="display-5 mb-3">Популярные направления</h2>
+                <p class="lead text-muted">Изучайте курсы по интересующим вас темам</p>
+            </div>
+        </div>
+        
+        <div class="row">
+            {% for tag in popular_tags %}
+            <div class="col-md-3 col-6 mb-3">
+                <a href="{% url 'courses_by_tag' tag.slug %}" 
+                   class="card text-decoration-none h-100 hover-shadow">
+                    <div class="card-body text-center">
+                        <span class="badge mb-3" style="background-color: {{ tag.color }}; color: white; font-size: 1.1em; padding: 8px 16px;">
+                            {{ tag.name }}
+                        </span>
+                        <p class="text-muted small mb-0">
+                            {{ tag.active_courses_count }} курс{{ tag.active_courses_count|pluralize:",ов" }}
+                        </p>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{% url 'tag_cloud' %}" class="btn btn-outline-primary">
+                <i class="fas fa-tags me-2"></i>Все теги
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Преимущества -->
+<section id="features" class="py-5">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col">
+                <h2 class="display-5 mb-3">Почему выбирают нас</h2>
+                <p class="lead text-muted">Мы предлагаем лучшие условия для онлайн-обучения</p>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-4 text-center mb-4">
+                <div class="feature-icon">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <h4>Опытные преподаватели</h4>
+                <p class="text-muted">
+                    Наши преподаватели - практикующие специалисты 
+                    с многолетним опытом работы
+                </p>
+            </div>
+            
+            <div class="col-md-4 text-center mb-4">
+                <div class="feature-icon">
+                    <i class="fas fa-certificate"></i>
+                </div>
+                <h4>Сертификаты</h4>
+                <p class="text-muted">
+                    Получайте официальные сертификаты 
+                    после успешного завершения курсов
+                </p>
+            </div>
+            
+            <div class="col-md-4 text-center mb-4">
+                <div class="feature-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h4>Гибкий график</h4>
+                <p class="text-muted">
+                    Учитесь в удобное для вас время 
+                    из любой точки мира
+                </p>
+            </div>
+        </div>
+        
+        <div class="row mt-5">
+            <div class="col-md-4 text-center mb-4">
+                <div class="feature-icon">
+                    <i class="fas fa-code"></i>
+                </div>
+                <h4>Практические навыки</h4>
+                <p class="text-muted">
+                    Фокус на реальных проектах 
+                    и практических заданиях
+                </p>
+            </div>
+            
+            <div class="col-md-4 text-center mb-4">
+                <div class="feature-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h4>Сообщество</h4>
+                <p class="text-muted">
+                    Общайтесь с другими студентами 
+                    и преподавателями
+                </p>
+            </div>
+            
+            <div class="col-md-4 text-center mb-4">
+                <div class="feature-icon">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <h4>Поддержка</h4>
+                <p class="text-muted">
+                    Техническая поддержка 
+                    и помощь преподавателей 24/7
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Призыв к действию -->
+<section class="bg-light py-5">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col">
+                {% if not user.is_authenticated %}
+                <h3 class="mb-3">Готовы начать обучение?</h3>
+                <p class="lead mb-4">
+                    Присоединяйтесь к тысячам студентов, которые уже начали свой путь 
+                    в IT с нашей образовательной платформой
+                </p>
+                <a href="{% url 'student_register' %}" class="btn btn-primary btn-lg">
+                    Зарегистрироваться бесплатно
+                </a>
+                {% else %}
+                    {% if has_student_profile %}
+                    <h3 class="mb-3">Готовы продолжить обучение?</h3>
+                    <p class="lead mb-4">
+                        Присоединяйтесь к тысячам студентов, которые уже начали свой путь 
+                        в IT с нашей образовательной платформой
+                    </p>
+                    <a href="{% url 'dashboard' %}" class="btn btn-primary btn-lg">
+                        Перейти к курсам
+                    </a>
+                    {% else %}
+                    <a href="{% url 'student_register' %}" class="btn btn-warning btn-lg">
+                        Завершить регистрацию
+                    </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Редактирование курса - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Панель преподавателя</a></li>
+                    <li class="breadcrumb-item active">Редактирование курса</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="fas fa-edit me-2"></i>Редактирование курса</h4>
+                        <a href="{% url 'course_manage' course.course_id %}" class="btn btn-outline-dark btn-sm">
+                            <i class="fas fa-cog me-1"></i>Управление курсом
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="id_title" class="form-label">Название курса *</label>
+                                    <input type="text" name="title" value="{{ form.title.value }}" class="form-control" id="id_title" required>
+                                    {% if form.title.errors %}
+                                    <div class="text-danger small">{{ form.title.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="id_description" class="form-label">Описание курса *</label>
+                                    <textarea name="description" class="form-control" id="id_description" rows="4" required>{{ form.description.value }}</textarea>
+                                    {% if form.description.errors %}
+                                    <div class="text-danger small">{{ form.description.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_price" class="form-label">Цена (руб)</label>
+                                            <input type="number" name="price" value="{{ form.price.value }}" class="form-control" id="id_price" min="0" step="0.01">
+                                            {% if form.price.errors %}
+                                            <div class="text-danger small">{{ form.price.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_duration_weeks" class="form-label">Длительность (недель)</label>
+                                            <input type="number" name="duration_weeks" value="{{ form.duration_weeks.value }}" class="form-control" id="id_duration_weeks" min="1">
+                                            {% if form.duration_weeks.errors %}
+                                            <div class="text-danger small">{{ form.duration_weeks.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_difficulty_level" class="form-label">Уровень сложности</label>
+                                            <select name="difficulty_level" class="form-select" id="id_difficulty_level">
+                                                {% for value, label in form.difficulty_level.field.choices %}
+                                                <option value="{{ value }}" {% if form.difficulty_level.value == value %}selected{% endif %}>{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_complexity_level" class="form-label">Сложность (от 1 до 5)</label>
+                                            <input type="number" name="complexity_level" value="{{ form.complexity_level.value }}" class="form-control" id="id_complexity_level" min="1">
+                                            {% if form.complexity_level.errors %}
+                                            <div class="text-danger small">{{ form.complexity_level.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Теги</label>
+                                    <div class="border rounded p-3">
+                                        {% for tag in form.tags %}
+                                        <div class="form-check">
+                                            {{ tag }}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="id_image" class="form-label">Изображение курса</label>
+                                    {% if course.image %}
+                                    <div class="mb-2">
+                                        <img src="{{ course.image.url }}" alt="Текущее изображение" class="img-thumbnail w-100">
+                                        <div class="form-check mt-2">
+                                            <input class="form-check-input" type="checkbox" name="image-clear" id="image-clear">
+                                            <label class="form-check-label" for="image-clear">Удалить изображение</label>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    <input type="file" class="form-control" id="id_image" name="image" accept="image/*">
+                                    <div class="mt-2 text-center">
+                                        <img id="imagePreview" src="#" class="img-thumbnail" style="max-height: 200px; display: none;">
+                                    </div>
+                                </div>
+                                
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" name="is_active" id="id_is_active" {% if form.is_active.value %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_is_active">Опубликовать курс</label>
+                                        </div>
+                                        
+                                        <div class="text-muted small">
+                                            <p><strong>Статистика курса:</strong></p>
+                                            <ul class="list-unstyled">
+                                                <li>Модулей: {{ course.modules.count }}</li>
+                                                <li>Уроков: {{ course.total_lessons }}</li>
+                                                <li>Студентов: {{ course.enrolled_students.count }}</li>
+                                                <li>Создан: {{ course.created_at|date:"d.m.Y" }}</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <div>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-save me-2"></i>Сохранить изменения
+                                </button>
+                                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Отмена</a>
+                            </div>
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                <i class="fas fa-trash me-2"></i>Удалить курс
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal подтверждения удаления -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение удаления</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить курс <strong>"{{ course.title }}"</strong>?</p>
+                <p class="text-danger">Это действие нельзя отменить. Все модули и уроки курса также будут удалены.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <form method="post" action="{% url 'course_delete' course.course_id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Удалить курс</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Предпросмотр изображения
+document.getElementById('id_image').addEventListener('change', function(e) {
+    const preview = document.getElementById('imagePreview');
+    const file = e.target.files[0];
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+    }
+});
+</script>
+{% endblock %}

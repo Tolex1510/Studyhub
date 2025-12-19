@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Панель преподавателя</a></li>
+                    {% if course %}
+                    <li class="breadcrumb-item"><a href="{% url 'course_manage' course.course_id %}">{{ course.title }}</a></li>
+                    {% endif %}
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow">
+                <div class="card-header {% if form.instance.id %}bg-warning text-dark{% else %}bg-success text-white{% endif %}">
+                    <h4 class="mb-0">
+                        <i class="fas {% if form.instance.id %}fa-edit{% else %}fa-plus-circle{% endif %} me-2"></i>
+                        {{ title }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if not course %}
+                        <div class="mb-3">
+                            <label for="course_id" class="form-label">Курс *</label>
+                            <select name="course" value="{{ form.course.value }}" class="form-select {% if form.course.errors %}is-invalid{% endif %}" id="course_id" required>
+                                <option value="">-- Выберите курс --</option>
+                                {% for course_option in form.fields.course.queryset %}
+                                <option value="{{ course_option.course_id }}">
+                                    <!-- {% if form.course == course_option.course_id %}selected{% endif %}>  -->
+                                    {{ course_option.title }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.course.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.course.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <input type="hidden" name="module" value="{{ module.id }}">
+                        <div class="alert alert-info">
+                            <strong>Курс:</strong> {{ course.title }}<br>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="id_title" class="form-label">Название модуля *</label>
+                            <input type="text" name="title" value="{{ form.title.value|default:'' }}" 
+                                   class="form-control {% if form.title.errors %}is-invalid{% endif %}" 
+                                   id="id_title" required>
+                            {% if form.title.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.title.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Описание модуля</label>
+                            <textarea name="description" class="form-control {% if form.description.errors %}is-invalid{% endif %}" 
+                                      id="id_description" rows="3">{{ form.description.value|default:'' }}</textarea>
+                            {% if form.description.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.description.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_order" class="form-label">Порядковый номер</label>
+                                    <input type="number" name="module_order" value="{{ form.module_order.value|default:'1' }}" 
+                                           class="form-control {% if form.order.errors %}is-invalid{% endif %}" 
+                                           id="id_order" min="1">
+                                    {% if form.order.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.order.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check form-switch mb-4">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="id_is_active" 
+                                   {% if form.is_active.value or not form.instance.id %}checked{% endif %}>
+                            <label class="form-check-label" for="id_is_active">Активный модуль</label>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <button type="submit" class="btn {% if form.instance.id %}btn-warning{% else %}btn-success{% endif %}">
+                                    <i class="fas fa-save me-2"></i>
+                                    {% if form.instance.id %}Сохранить изменения{% else %}Создать модуль{% endif %}
+                                </button>
+                                {% if course %}
+                                <a href="{% url 'course_manage' course.course_id %}" class="btn btn-outline-secondary">Отмена</a>
+                                {% else %}
+                                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Отмена</a>
+                                {% endif %}
+                            </div>
+                            
+                            {% if form.instance.id %}
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                <i class="fas fa-trash me-2"></i>Удалить
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if form.instance.id %}
+<!-- Modal подтверждения удаления -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Удаление модуля</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Удалить модуль <strong>"{{ form.instance.title }}"</strong>?</p>
+                <p class="text-danger">Это действие нельзя отменить. Все уроки в модуле также будут удалены.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <form method="post" action="{% url 'module_delete' form.instance.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Удалить модуль</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

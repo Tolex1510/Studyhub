@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.tag-cloud {
+    text-align: center;
+    line-height: 2.5;
+}
+.tag-cloud a {
+    margin: 0 10px;
+    text-decoration: none;
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+.tag-cloud a:hover {
+    transform: scale(1.1);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center mb-5">
+                <h1>Облако тегов</h1>
+                <p class="lead text-muted">Все теги курсов на одной странице</p>
+                <a href="{% url 'course_list' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Вернуться к курсам
+                </a>
+            </div>
+
+            <!-- Облако тегов -->
+            <div class="tag-cloud mb-5">
+                {% for tag in tags %}
+                <a href="{% url 'courses_by_tag' tag.slug %}" 
+                   class="badge text-decoration-none" 
+                   style="background-color: {{ tag.color }}; color: white; font-size: {{ tag.font_size }}em; padding: 8px 16px;">
+                    {{ tag.name }} ({{ tag.tag_course_count }})
+                </a>
+                {% endfor %}
+            </div>
+
+            <!-- Детальный список тегов -->
+            <div class="row">
+                {% for tag in tags %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <a href="{% url 'courses_by_tag' tag.slug %}" 
+                                       class="badge text-decoration-none mb-2" 
+                                       style="background-color: {{ tag.color }}; color: white;">
+                                        {{ tag.name }}
+                                    </a>
+                                    <p class="small text-muted mb-1">
+                                        {{ tag.tag_course_count }} курс{{ tag.tag_course_count|pluralize:",ов" }}
+                                    </p>
+                                    {% if tag.description %}
+                                    <p class="small mb-0">{{ tag.description }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,208 @@
+<!-- templates/courses/course_detail.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ course.title }} - Образовательная платформа{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Хлебные крошки -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'course_list' %}">Все курсы</a></li>
+            <li class="breadcrumb-item active">{{ course.title }}</li>
+        </ol>
+    </nav>
+
+    <!-- Заголовок курса -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-5 fw-bold">{{ course.title }}</h1>
+            <p class="lead">{{ course.description }}</p>
+            
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <span class="badge bg-primary">{{ course.get_difficulty_level_display }}</span>
+                <span class="badge bg-secondary">{{ course.duration_weeks }} недель</span>
+                <span class="badge bg-info">Сложность: {{ course.complexity_level }}/5</span>
+                {% if course.price > 0 %}
+                <span class="badge bg-success">{{ course.price }} руб.</span>
+                {% else %}
+                <span class="badge bg-success">Бесплатно</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    {% if is_authenticated %}
+                        {% if is_enrolled %}
+                            <div class="mb-3">
+                                <span class="badge bg-success fs-6">Вы записаны</span>
+                                <p class="small text-muted mt-1">Статус: {{ enrollment_status }}</p>
+                            </div>
+                            <a href="{% url 'dashboard' %}" class="btn btn-primary w-100">
+                                Перейти к обучению
+                            </a>
+                        {% elif needs_student_profile %}
+                            <div class="alert alert-warning mb-3">
+                                <small>Для записи на курс необходимо завершить регистрацию студента</small>
+                            </div>
+                            <a href="{% url 'student_register' %}" class="btn btn-warning w-100">
+                                Завершить регистрацию
+                            </a>
+                        {% elif can_enroll %}
+                            <form method="post" action="{% url 'enroll_in_course' course.course_id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success btn-lg w-100 mb-2">
+                                    <i class="fas fa-play-circle me-2"></i>
+                                    Начать обучение
+                                </button>
+                            </form>
+                            {% if course.price > 0 %}
+                            <p class="small text-muted">Цена: {{ course.price }} руб.</p>
+                            {% else %}
+                            <p class="small text-muted">Бесплатный курс</p>
+                            {% endif %}
+                        {% else %}
+                            <button class="btn btn-secondary btn-lg w-100 mb-2" disabled>
+                                Недоступно для записи
+                            </button>
+                            <p class="small text-muted">Требуется выполнить предварительные условия</p>
+                        {% endif %}
+                    {% else %}
+                        <!-- Для неаутентифицированных пользователей -->
+                        <div class="mb-3">
+                            <h6>Хотите начать обучение?</h6>
+                            <p class="small text-muted">Зарегистрируйтесь для доступа к курсу</p>
+                        </div>
+                        <a href="{% url 'student_register' %}" class="btn btn-primary w-100 mb-2">
+                            Зарегистрироваться
+                        </a>
+                        <a href="{% url 'login' %}" class="btn btn-outline-primary w-100">
+                            Войти в аккаунт
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Статистика курса -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Статистика курса</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h5>{{ course_stats.total_modules }}</h5>
+                            <small class="text-muted">Модулей</small>
+                        </div>
+                        <div class="col-6">
+                            <h5>{{ course_stats.total_lessons }}</h5>
+                            <small class="text-muted">Уроков</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h5>{{ course_stats.active_students }}</h5>
+                            <small class="text-muted">Учатся</small>
+                        </div>
+                        <div class="col-6">
+                            <h5>{{ course_stats.completed_students }}</h5>
+                            <small class="text-muted">Завершили</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Предварительные требования (только для аутентифицированных) -->
+    {% if is_authenticated and not is_enrolled and not can_enroll and missing_requirements.mandatory %}
+    <div class="alert alert-warning">
+        <h5><i class="fas fa-exclamation-triangle me-2"></i>Предварительные требования</h5>
+        <p class="mb-2">Для записи на этот курс необходимо завершить:</p>
+        <ul class="mb-0">
+            {% for req in missing_requirements.mandatory %}
+            <li>
+                <strong>{{ req.course.title }}</strong>
+                {% if req.reason %} - {{ req.reason }}{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if is_authenticated and missing_requirements.recommended %}
+    <div class="alert alert-info">
+        <h5><i class="fas fa-info-circle me-2"></i>Рекомендуемые курсы</h5>
+        <p class="mb-2">Для лучшего понимания материала рекомендуется пройти:</p>
+        <ul class="mb-0">
+            {% for course in missing_requirements.recommended %}
+            <li>{{ course.title }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Программа курса -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <h3 class="mb-4">Программа курса</h3>
+            
+            {% for module in modules %}
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        Модуль {{ module.module_order }}: {{ module.title }}
+                    </h5>
+                    {% if module.description %}
+                    <p class="mb-0 text-muted small">{{ module.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="lessons-list">
+                        {% for lesson in module.lessons.all %}
+                        <div class="lesson-item d-flex align-items-center py-2 px-3 border-bottom">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center">
+                                    <span class="badge bg-secondary me-2">{{ lesson.lesson_order }}</span>
+                                    <h6 class="mb-0">{{ lesson.title }}</h6>
+                                </div>
+                                <div class="ms-4 mt-1">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>{{ lesson.duration_minutes }} мин.
+                                        <i class="fas fa-tag ms-2 me-1"></i>{{ lesson.get_lesson_type_display }}
+                                        {% if not lesson.is_required %}
+                                        <span class="badge bg-warning ms-2">Опциональный</span>
+                                        {% endif %}
+                                        {% if lesson.has_homework %}
+                                        <span class="badge bg-info ms-2">Домашнее задание</span>
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                            {% if is_enrolled %}
+                            <div class="lesson-actions">
+                                <a href="{% url 'lesson_detail' lesson.lesson_id %}" class="btn btn-outline-primary btn-sm">
+                                    Открыть
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <p class="text-muted mb-0">В этом модуле пока нет уроков</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-info">
+                <p class="mb-0">В этом курсе пока нет модулей.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

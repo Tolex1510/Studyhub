@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Навигация -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Мои курсы</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'course_modules' lesson.module.course.course_id %}">{{ lesson.module.course.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'course_modules' lesson.module.course.course_id %}">{{ lesson.module.title }}</a></li>
+                    <li class="breadcrumb-item active">{{ lesson.title }}</li>
+                </ol>
+            </nav>
+
+            <!-- Заголовок урока -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h1 class="h3 mb-2">{{ lesson.title }}</h1>
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                <span class="badge bg-primary">
+                                    <i class="fas fa-clock me-1"></i>{{ lesson.duration_minutes }} минут
+                                </span>
+                                {% if lesson.max_score > 0 %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-star me-1"></i>{{ lesson.max_score }} баллов
+                                </span>
+                                {% endif %}
+                                {% if completion %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check me-1"></i>Завершен
+                                    {% if completion.score %}
+                                    ({{ completion.score }} баллов)
+                                    {% endif %}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div>
+                            {% if prev_lesson %}
+                            <a href="{% url 'lesson_detail' prev_lesson.lesson_id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-arrow-left"></i>
+                            </a>
+                            {% endif %}
+                            {% if next_lesson %}
+                            <a href="{% url 'lesson_detail' next_lesson.lesson_id %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <p class="text-muted mb-0">Модуль: {{ lesson.module.title }}</p>
+                </div>
+            </div>
+
+            <!-- Контент урока -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <!-- Видео если есть -->
+                    {% if lesson.video_url %}
+                    <div class="ratio ratio-16x9 mb-4">
+                        <iframe src="{{ lesson.video_url }}" 
+                                frameborder="0" 
+                                allowfullscreen></iframe>
+                    </div>
+                    {% endif %}
+
+                    <!-- Текстовый контент -->
+                    <div class="lesson-content">
+                        {{ lesson.content|linebreaks }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Действия с уроком</h5>
+                </div>
+                <div class="card-body">
+                    {% if not completion %}
+                    <!-- Форма завершения урока -->
+                    <form method="post" action="{% url 'complete_lesson' lesson.lesson_id %}">
+                        {% csrf_token %}
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <p class="mb-0">Отметить урок как завершенный?</p>
+                                {% if lesson.max_score > 0 %}
+                                <div class="mt-2">
+                                    <label for="score" class="form-label small">Балл (необязательно, максимум {{ lesson.max_score }}):</label>
+                                    <input type="number" 
+                                           name="score" 
+                                           id="score" 
+                                           class="form-control form-control-sm w-50" 
+                                           min="0" 
+                                           max="{{ lesson.max_score }}"
+                                           placeholder="0-{{ lesson.max_score }}">
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-check me-2"></i>Завершить урок
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    {% else %}
+                    <!-- Информация о завершении и действия -->
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <p class="mb-0">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                Урок завершен {{ completion.completed_at|date:"d.m.Y H:i" }}
+                                {% if completion.score %}
+                                <span class="badge bg-warning text-dark ms-2">{{ completion.score }} баллов</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="btn-group">
+                                {% if lesson.max_score > 0 %}
+                                <button type="button" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#scoreModal">
+                                    <i class="fas fa-edit me-1"></i>Изменить балл
+                                </button>
+                                {% endif %}
+                                <form method="post" action="{% url 'uncomplete_lesson' lesson.lesson_id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Отменить завершение урока?')">
+                                        <i class="fas fa-times me-1"></i>Отменить
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Файлы урока -->
+            <!-- {% if lesson.attachment %}
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-download me-2"></i>Материалы урока</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-file me-2"></i>
+                            <span>{{ lesson.attachment.name }}</span>
+                        </div>
+                        <a href="{{ lesson.attachment.url }}" class="btn btn-primary" download>
+                            <i class="fas fa-download me-2"></i>Скачать
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %} -->
+        </div>
+
+        <!-- Боковая панель -->
+        <div class="col-lg-4">
+            <!-- Список уроков модуля -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="fas fa-list me-2"></i>Уроки модуля</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for module_lesson in module_lessons %}
+                        <a href="{% url 'lesson_detail' module_lesson.lesson_id %}" 
+                           class="list-group-item list-group-item-action {% if module_lesson.lesson_id == lesson.lesson_id %}active{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-file-alt me-2"></i>
+                                    <strong>{{ module_lesson.lesson_order }}.</strong> {{ module_lesson.title }}
+                                </div>
+                                {% if module_lesson.lesson_id == lesson.lesson_id %}
+                                <i class="fas fa-play text-primary"></i>
+                                {% endif %}
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Навигация -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="fas fa-compass me-2"></i>Навигация</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'course_modules' lesson.module.course.course_id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-folder me-2"></i>Вернуться к модулям
+                        </a>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-home me-2"></i>Мои курсы
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Теги курса: {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Теги курса: {{ course.title }}</h1>
+                <a href="{% url 'course_management' %}" class="btn btn-secondary">Назад к курсам</a>
+            </div>
+
+            <div class="row">
+                <!-- Форма добавления тега -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Добавить тег</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                {% for field in form %}
+                                <div class="mb-3">
+                                    <label for="{{ field.id_for_label }}" class="form-label">
+                                        {{ field.label }}
+                                    </label>
+                                    {{ field }}
+                                    {% for error in field.errors %}
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                {% endfor %}
+                                <button type="submit" class="btn btn-primary">Добавить тег</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Текущие теги -->
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Текущие теги курса</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if current_tags %}
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                {% for course_tag in current_tags %}
+                                <div class="tag-badge position-relative">
+                                    <span class="badge fs-6" [style.background-color]="course_tag.tag.color"; style="color: white;">
+                                        {{ course_tag.tag.name }}
+                                    </span>
+                                    <form method="post" 
+                                          action="{% url 'course_tag_remove' course.course_id course_tag.coursetag_id %}" 
+                                          class="position-absolute top-0 start-100 translate-middle">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger rounded-circle p-0" 
+                                                style="width: 20px; height: 20px; font-size: 10px;"
+                                                onclick="return confirm('Удалить тег?')">
+                                        </button>
+                                    </form>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-muted">К этому курсу еще не добавлены теги</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Все доступные теги -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Все доступные теги</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for tag in all_tags %}
+                                <span class="badge fs-6" [style.background-color]="tag.color" style="color: white;">
+                                    {{ tag.name }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.tag-badge {
+    margin-right: 25px;
+    margin-bottom: 10px;
+}
+</style>
+{% endblock %}

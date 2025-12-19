@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Выбор типа регистрации{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="text-center mb-5">
+                <h1 class="display-4 mb-3">Присоединяйтесь к платформе</h1>
+                <p class="lead text-muted">Выберите тип аккаунта, который соответствует вашим целям</p>
+            </div>
+            
+            <div class="row">
+                <!-- Студент -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 border-0 shadow-sm hover-shadow">
+                        <div class="card-header bg-primary text-white text-center py-4">
+                            <i class="fas fa-user-graduate fa-3x mb-3"></i>
+                            <h3 class="card-title mb-0">Студент</h3>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <div class="mb-3">
+                                <h5>Для тех, кто хочет:</h5>
+                                <ul class="list-unstyled">
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Изучать новые технологии</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Получать практические навыки</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Осваивать профессию с нуля</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Получать сертификаты</li>
+                                </ul>
+                            </div>
+                            <div class="mt-auto">
+                                <a href="{% url 'student_register' %}" class="btn btn-primary btn-lg w-100">
+                                    Стать студентом
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Преподаватель -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 border-0 shadow-sm hover-shadow">
+                        <div class="card-header bg-success text-white text-center py-4">
+                            <i class="fas fa-chalkboard-teacher fa-3x mb-3"></i>
+                            <h3 class="card-title mb-0">Преподаватель</h3>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <div class="mb-3">
+                                <h5>Для тех, кто хочет:</h5>
+                                <ul class="list-unstyled">
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Делиться знаниями</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Проверять задания студентов</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Создавать учебные материалы</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Работать с мотивированными студентами</li>
+                                </ul>
+                            </div>
+                            <div class="mt-auto">
+                                <a href="{% url 'reviewer_register' %}" class="btn btn-success btn-lg w-100">
+                                    Стать преподавателем
+                                </a>
+                                <small class="text-muted d-block mt-2">
+                                    * Требуется одобрение администратора
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <p class="mb-0">
+                    Уже есть аккаунт? 
+                    <a href="{% url 'login' %}" class="text-decoration-none fw-bold">
+                        Войдите здесь
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-shadow {
+    transition: all 0.3s ease;
+}
+.hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+}
+</style>
+{% endblock %}

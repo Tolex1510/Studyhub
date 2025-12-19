@@ -1,0 +1,110 @@
+<!-- templates/dashboard/reviewer_dashboard.html -->
+{% extends 'base.html' %}
+
+{% block title %}Личный кабинет преподавателя{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-4">
+            <!-- Профиль преподавателя -->
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Мой профиль</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-chalkboard-teacher" style="font-size: 80px; color: #6c757d;"></i>
+                    </div>
+                    <h4>{{ reviewer.get_full_name }}</h4>
+                    <p class="text-muted">{{ reviewer.email }}</p>
+                    <p class="text-muted">
+                        <i class="fas fa-briefcase me-2"></i>
+                        {{ reviewer.specialization }}
+                    </p>
+                    <p class="text-muted">
+                        <i class="fas fa-calendar me-2"></i>
+                        Работает с: {{ reviewer.hire_date|date:"d.m.Y" }}
+                    </p>
+                    <div class="badge {% if reviewer.is_approved %}bg-success{% else %}bg-warning{% endif %} fs-6">
+                        {% if reviewer.is_approved %}Преподаватель{% else %}На модерации{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            {% if error %}
+            <div class="alert alert-danger">
+                <strong>Ошибка!</strong> Произошла ошибка при загрузке данных. Пожалуйста, попробуйте позже.
+            </div>
+            {% endif %}
+
+            <!-- Быстрые действия -->
+            {% if reviewer.is_approved %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Быстрые действия</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <a href="{% url 'course_create' %}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-plus me-2"></i>Создать курс
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <a href="{% url 'module_create' %}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-plus me-2"></i>Создать модуль
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <a href="{% url 'lesson_create' %}" class="btn btn-outline-danger w-100">
+                                <i class="fas fa-plus me-2"></i>Создать урок
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Мои курсы -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Мои курсы</h5>
+                </div>
+                <div class="card-body">
+                    {% if courses_with_stats %}
+                        {% for item in courses_with_stats %}
+                        <div class="course-item border rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6>{{ item.course.title }}</h6>
+                                    <small class="text-muted">
+                                        Студентов: {{ item.stats.active_students_count }}
+                                    </small>
+                                </div>
+                                <div class="btn-group">
+                                    <a href="{% url 'course_manage' item.course.course_id %}" class="btn btn-sm btn-outline-primary">Управление</a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">Вы пока не прикреплены к курсам</p>
+                        <a href="{% url 'course_create' %}" class="btn btn-success">
+                            Создать курс
+                        </a>
+                        <div class="alert alert-info">
+                            <p class="mb-2">Обратитесь к администратору для прикрепления к курсам</p>
+                            {% if not reviewer.is_approved %}
+                            <p class="mb-0"><small>Ваш аккаунт ожидает одобрения администратора</small></p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

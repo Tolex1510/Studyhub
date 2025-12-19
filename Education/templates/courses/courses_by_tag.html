@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <!-- Заголовок с тегом -->
+            <div class="text-center mb-5">
+                <span class="badge mb-3" style="background-color: {{ tag.color }}; color: white; font-size: 1.2em; padding: 10px 20px;">
+                    {{ tag.name }}
+                </span>
+                <h1>Курсы с тегом "{{ tag.name }}"</h1>
+                <p class="lead text-muted">
+                    {{ courses.count }} курс{{ courses.count|pluralize:",ов" }} найдено
+                    {% if tag.description %} | {{ tag.description }}{% endif %}
+                </p>
+                <a href="{% url 'course_list' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Все курсы
+                </a>
+            </div>
+
+            <!-- Похожие теги -->
+            {% if similar_tags %}
+            <div class="mb-4">
+                <h5>Похожие теги:</h5>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for similar_tag in similar_tags %}
+                    <a href="{% url 'courses_by_tag' similar_tag.slug %}" 
+                       class="badge text-decoration-none" 
+                       style="background-color: {{ similar_tag.color }}; color: white;">
+                        {{ similar_tag.name }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Список курсов -->
+            <div class="row">
+                {% for course in courses %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card course-card h-100">
+                        <div class="card-header pb-2">
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for course_tag in course.tags.all %}
+                                <a href="{% url 'courses_by_tag' course_tag.slug %}" 
+                                   class="badge tag-badge text-decoration-none" 
+                                   style="background-color: {{ course_tag.color }}; color: white; font-size: 0.7em;">
+                                    {{ course_tag.name }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">{{ course.title }}</h5>
+                            <p class="card-text text-muted flex-grow-1">
+                                {{ course.description|truncatewords:20 }}
+                            </p>
+                            
+                            <div class="course-meta mb-3">
+                                <div class="d-flex justify-content-between text-muted small">
+                                    <span><i class="fas fa-clock me-1"></i>{{ course.duration_weeks }} нед.</span>
+                                    <span><i class="fas fa-signal me-1"></i>{{ course.get_difficulty_level_display }}</span>
+                                    <span><i class="fas fa-users me-1"></i>{{ course.enrollments.count }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="h6 mb-0 text-primary">
+                                    {% if course.price > 0 %}
+                                    {{ course.price }} ₽
+                                    {% else %}
+                                    Бесплатно
+                                    {% endif %}
+                                </span>
+                                <a href="#" class="btn btn-outline-primary btn-sm">Подробнее</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

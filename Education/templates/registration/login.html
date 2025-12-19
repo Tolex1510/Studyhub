@@ -1,0 +1,153 @@
+<!-- templates/registration/login.html -->
+{% extends 'base.html' %}
+
+{% block title %}Вход в систему{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h2 class="mb-0">
+                        <i class="fas fa-sign-in-alt me-2"></i>
+                        Вход в систему
+                    </h2>
+                    <p class="mb-0 mt-2">Войдите в свой аккаунт</p>
+                </div>
+                
+                <div class="card-body p-4">
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <strong>Ошибка!</strong> {{ error }}
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if next %}
+                        {% if user.is_authenticated %}
+                        <div class="alert alert-warning">
+                            У вашего аккаунта нет доступа к этой странице.
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            Пожалуйста, войдите, чтобы увидеть эту страницу.
+                        </div>
+                        {% endif %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label">
+                                Email *
+                            </label>
+                            <input type="text" 
+                                   name="username" 
+                                   id="id_username"
+                                   class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                                   placeholder="Введите ваш email"
+                                   value="{{ form.username.value|default:'' }}"
+                                   required
+                                   autofocus>
+                            {% if form.username.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.username.errors.0 }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Используйте email, который указали при регистрации
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_password" class="form-label">
+                                Пароль *
+                            </label>
+                            <div class="input-group">
+                                <input type="password" 
+                                       name="password" 
+                                       id="id_password"
+                                       class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+                                       placeholder="Введите ваш пароль"
+                                       required>
+                                <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            {% if form.password.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.password.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <input type="hidden" name="next" value="{{ next }}">
+
+                        <div class="d-grid gap-2 mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>
+                                Войти
+                            </button>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="remember_me" id="remember_me">
+                            <label class="form-check-label" for="remember_me">
+                                Запомнить меня
+                            </label>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <p class="mb-2">
+                            Нет аккаунта? 
+                            <a href="{% url 'choose_registration_type' %}" class="text-decoration-none fw-bold">
+                                Зарегистрируйтесь
+                            </a>
+                        </p>
+                        <p class="mb-0 text-muted">
+                            Выберите тип аккаунта: студент или преподаватель
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Информация о восстановлении пароля -->
+            <div class="card mt-4">
+                <div class="card-body text-center">
+                    <p class="mb-2">Забыли пароль?</p>
+                    <a href="#" class="btn btn-outline-secondary btn-sm">
+                        Восстановить пароль
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Показать/скрыть пароль
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordField = document.getElementById('id_password');
+    
+    togglePassword.addEventListener('click', function() {
+        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordField.setAttribute('type', type);
+        this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+    });
+    
+    // Автофокус на поле email
+    document.getElementById('id_username').focus();
+});
+</script>
+{% endblock %}
